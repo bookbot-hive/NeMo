@@ -1,4 +1,4 @@
-# Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ from nemo.collections.llm.api import finetune, pretrain
 from nemo.collections.llm.gpt.data.mock import MockDataModule
 from nemo.collections.llm.gpt.data.packed_sequence import PackedSequenceSpecs
 from nemo.collections.llm.gpt.model.llama import Llama31Config8B, LlamaModel
-from nemo.collections.llm.peft.lora import LoRA
+from nemo.collections.llm.peft import PEFT_STR2CLS
 from nemo.collections.llm.recipes.finetune_default import default_finetune_recipe
 from nemo.collections.llm.recipes.log.default import default_log, default_resume, tensorboard_logger
 from nemo.collections.llm.recipes.optim.adam import distributed_fused_adam_with_cosine_annealing
@@ -266,7 +266,8 @@ def finetune_recipe(
         name (str): Name of the fine-tuning run.
         num_nodes (int): Number of compute nodes to use.
         num_gpus_per_node (int): Number of GPUs per node.
-        peft_scheme (Optional[str]): Name of the peft scheme to use for finetuning. Allowed values: 'lora'/'none'/None.
+        peft_scheme (Optional[str]): Name of the peft scheme to use for fine-tuning.
+            Allowed values: 'lora'/'dora'/'none'/None.
         seq_length (int): Maximum number of tokens per microbatch.
         packed_sequence (Optional[bool]): If true, fine-tuning sequences will be packed into batches up to the given
             maximum seq_length for better efficiency. By default, this value equals performance_mode.
@@ -284,9 +285,7 @@ def finetune_recipe(
             >>> print(recipe)
 
     Note:
-        This recipe uses the SQuAD dataset for fine-tuning. For more information
-        on fine-tuning LLMs with NeMo, see the fine-tuning guide in the
-        `examples/llm/finetune/` directory.
+        This recipe uses the SQuAD dataset for fine-tuning.
     """
     # Default to unpacked data in normal mode and packed data in performance mode
     # once packing recipe is well tested, change this default to true
@@ -298,16 +297,15 @@ def finetune_recipe(
         seq_length = 4096 if packed_sequence else 2048
 
     recipe = default_finetune_recipe(
-        model(), "meta-llama/Meta-Llama-3.1-8B", dir, name, num_nodes, num_gpus_per_node, packed_sequence
+        model(), "meta-llama/Llama-3.1-8B", dir, name, num_nodes, num_gpus_per_node, packed_sequence
     )
     if peft_scheme is None or peft_scheme.lower() == 'none':
         recipe.trainer.strategy.tensor_model_parallel_size = 2
         recipe.optim.config.lr = 5e-6
-    elif peft_scheme.lower() == 'lora':
-        recipe.peft = run.Config(LoRA)
+    elif peft_scheme.lower() in ['lora', 'dora']:
+        recipe.peft = run.Config(PEFT_STR2CLS[peft_scheme.lower()])
         recipe.peft.dim = 8
         recipe.peft.alpha = 16
-        recipe.peft.target_modules = ['linear_qkv']
         recipe.optim.config.use_distributed_optimizer = False
 
         # some settings currently do not function correctly with LoRA
@@ -342,7 +340,8 @@ def finetune_performance_optimizations(
 
     Args:
         recipe (run.Partial): Base fine-tuning recipe to which performance optimizations will be added
-        peft_scheme (str): Name of the peft scheme to use for fine-tuning. Allowed values: 'lora', 'none'/None.
+        peft_scheme (Optional[str]): Name of the peft scheme to use for fine-tuning.
+            Allowed values: 'lora'/'dora'/'none'/None.
 
     Returns:
         run.Partial: Partial configuration for performance-optimized fine-tuning.
@@ -372,6 +371,8 @@ def finetune_performance_optimizations(
                 tp_comm_overlap=False,
             )
         )
+    else:
+        recipe.peft.target_modules = ['linear_qkv']
 
     recipe.trainer.callbacks.append(run.Config(TimingCallback))
     recipe.trainer.callbacks.append(

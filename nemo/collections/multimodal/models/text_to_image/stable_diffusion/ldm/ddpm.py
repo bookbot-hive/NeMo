@@ -11,6 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# flake8: noqa
+# pylint: skip-file
+
 import itertools
 import os
 import time
@@ -68,7 +72,14 @@ from nemo.collections.multimodal.parts.stable_diffusion.utils import (
 from nemo.collections.multimodal.parts.utils import randn_like
 from nemo.collections.nlp.models.language_modeling.megatron_base_model import MegatronBaseModel
 from nemo.collections.nlp.modules.common.megatron.module import Float16Module
-from nemo.collections.nlp.parts.mixins.nlp_adapter_mixins import NLPAdapterModelMixin
+
+try:
+    from nemo.collections.nlp.parts.mixins.nlp_adapter_mixins import NLPAdapterModelMixin
+except (ImportError, ModuleNotFoundError):
+    from abc import ABC
+
+    NLPAdapterModelMixin = ABC
+
 from nemo.collections.nlp.parts.peft_config import PEFT_CONFIG_MAP, PEFTConfig
 from nemo.collections.nlp.parts.utils_funcs import get_last_rank
 from nemo.core.classes.common import Serialization
@@ -246,7 +257,7 @@ class DDPM(torch.nn.Module):
         load_unet=True,
         load_encoder=True,
     ):
-        pl_sd = torch.load(path, map_location="cpu")
+        pl_sd = torch.load(path, map_location="cpu", weights_only=False)
         if "state_dict" in list(pl_sd.keys()):
             pl_sd = pl_sd["state_dict"]
 
@@ -2340,7 +2351,7 @@ class MegatronLatentDiffusion(NLPAdapterModelMixin, MegatronBaseModel):
         if filepath.endswith('.nemo'):
             conf, state_dict = self._get_config_and_state_dict_from_nemo(filepath, map_location)
         elif filepath.endswith('.ckpt'):
-            state_dict = torch.load(filepath, map_location)['state_dict']
+            state_dict = torch.load(filepath, map_location, weights_only=False)['state_dict']
         else:
             raise RuntimeError(f"{filepath} is not nemo file or ckpt file")
         if not peft_cfgs:

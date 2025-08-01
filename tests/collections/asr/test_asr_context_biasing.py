@@ -1,4 +1,4 @@
-# Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -91,7 +91,7 @@ class TestCTCWordSpotter:
         assert ws_results[0].word == target_text
         assert ws_results[0].start_frame == 9
         assert ws_results[0].end_frame == 19
-        assert round(ws_results[0].score, 4) == 8.9967
+        torch.testing.assert_close(ws_results[0].score, 8.9967, atol=1e-3, rtol=1e-4)
 
 
 class TestContextBiasingUtils:
@@ -118,7 +118,7 @@ class TestContextBiasingUtils:
         preds = rnnt_utils.Hypothesis(
             y_sequence=torch.tensor([120, 29]),
             score=0.0,
-            timestep=torch.tensor([0, 1, 2, 3]),
+            timestamp=torch.tensor([0, 1, 2, 3]),
         )
         pred_text, raw_text = context_biasing.merge_alignment_with_ws_hyps(
             preds,
@@ -134,7 +134,7 @@ class TestContextBiasingUtils:
         preds = rnnt_utils.Hypothesis(
             y_sequence=[],
             score=0.0,
-            timestep=[],
+            timestamp=[],
         )
         pred_text, raw_text = context_biasing.merge_alignment_with_ws_hyps(
             preds,

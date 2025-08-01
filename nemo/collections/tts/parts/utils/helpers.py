@@ -48,7 +48,6 @@ from typing import Optional, Tuple
 import librosa
 import matplotlib.pylab as plt
 import numpy as np
-import seaborn as sns
 import torch
 from numba import jit, prange
 
@@ -525,17 +524,6 @@ def plot_alignment_to_numpy_for_speechllm(
     return data
 
 
-def plot_codec_to_numpy(codes, title=''):
-    fig, ax = plt.subplots(figsize=(10, 3))
-    sns.heatmap(codes, ax=ax)
-
-    plt.tight_layout()
-    fig.canvas.draw()
-    data = save_figure_to_numpy(fig)
-    plt.close()
-    return data
-
-
 def plot_pitch_to_numpy(pitch, ylim_range=None):
     fig, ax = plt.subplots(figsize=(12, 3))
     plt.plot(pitch)
@@ -632,10 +620,8 @@ def plot_gate_outputs_to_numpy(gate_targets, gate_outputs):
 
 
 def save_figure_to_numpy(fig):
-    # save it to a numpy array.
-    data = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
-    data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
-    return data
+    img_array = np.array(fig.canvas.renderer.buffer_rgba())
+    return img_array
 
 
 @rank_zero_only
@@ -802,8 +788,7 @@ def clip_grad_value_(parameters, clip_value, norm_type=2):
 
 
 def convert_pad_shape(pad_shape):
-    l = pad_shape[::-1]
-    pad_shape = [item for sublist in l for item in sublist]
+    pad_shape = [item for sublist in pad_shape[::-1] for item in sublist]
     return pad_shape
 
 

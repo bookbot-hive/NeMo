@@ -43,7 +43,13 @@ from nemo.collections.nlp.models.language_modeling.megatron_gpt_model import Meg
 from nemo.collections.nlp.models.language_modeling.megatron_gpt_sft_model import MegatronGPTSFTModel
 from nemo.collections.nlp.models.language_modeling.megatron_retrieval_model import MegatronRetrievalModel
 from nemo.collections.nlp.models.language_modeling.megatron_t5_model import MegatronT5Model
-from nemo.collections.nlp.models.machine_translation.megatron_nmt_model import MegatronNMTModel
+
+try:
+    from nemo.collections.nlp.models.machine_translation.megatron_nmt_model import MegatronNMTModel
+except ModuleNotFoundError:
+    from abc import ABC
+
+    MegatronNMTModel = ABC
 from nemo.collections.nlp.parts.nlp_overrides import (
     GradScaler,
     NLPDDPStrategy,
@@ -112,6 +118,11 @@ def get_args():
         choices=['32-true', '16-mixed', 'bf16-mixed'],
         help="Precision value for the trainer that matches with precision of the ckpt",
     )
+    parser.add_argument(
+        "--convert_mlm",
+        action="store_true",
+        help="Use this flag to convert megatron-lm checkpoints.",
+    )
 
     args = parser.parse_args()
     return args
@@ -176,7 +187,6 @@ def convert(local_rank, rank, world_size, args):
     parallel_state.initialize_model_parallel(
         tensor_model_parallel_size=app_state.tensor_model_parallel_size,
         pipeline_model_parallel_size=app_state.pipeline_model_parallel_size,
-        pipeline_model_parallel_split_rank=app_state.pipeline_model_parallel_split_rank,
     )
 
     app_state.pipeline_model_parallel_rank = parallel_state.get_pipeline_model_parallel_rank()
@@ -195,7 +205,9 @@ def convert(local_rank, rank, world_size, args):
     )
 
     if args.model_type == 'gpt':
-        model = MegatronGPTModel.load_from_checkpoint(checkpoint_path, hparams_file=args.hparams_file, trainer=trainer)
+        model = MegatronGPTModel.load_from_checkpoint(
+            checkpoint_path, hparams_file=args.hparams_file, trainer=trainer, load_mlm=args.convert_mlm
+        )
     elif args.model_type == 'sft':
         model = MegatronGPTSFTModel.load_from_checkpoint(
             checkpoint_path, hparams_file=args.hparams_file, trainer=trainer

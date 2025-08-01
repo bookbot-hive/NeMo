@@ -15,7 +15,9 @@
 
 # This code has been adapted from the following private repo: https://gitlab-master.nvidia.com/ADLR/megatron-lm/-/tree/prompt-learning/prefix_tuning_v2
 # Adapted by: @adithyare
-
+#
+# flake8: noqa
+# pylint: skip-file
 
 import itertools
 from typing import Any
@@ -288,7 +290,7 @@ class MegatronT5BaseAdapterModel(MegatronT5PromptLearningModel):
 
     def on_validation_epoch_end(self):
         if self.cfg.get('pipeline_model_parallel_size', 1) > 1:
-            if parallel_state.is_pipeline_last_stage():
+            if parallel_state.is_pipeline_last_stage(ignore_virtual=False):
                 # only the last pipeline parallel stages return loss
                 averaged_loss = torch.stack([i['loss'] for i in self.validation_step_outputs]).mean()
             else:
@@ -466,8 +468,12 @@ class MegatronT5LoraModel(MegatronT5BaseAdapterModel):
 
         self.frozen_model.freeze()
         logging.info(f'Before adding adapters:\n{self.frozen_model.summarize()}')
-        encoder = self.frozen_model.enc_dec_model.enc_dec_model.encoder
-        decoder = self.frozen_model.enc_dec_model.enc_dec_model.decoder
+        if self.megatron_amp_O2:
+            encoder = self.frozen_model.enc_dec_model.module.enc_dec_model.encoder
+            decoder = self.frozen_model.enc_dec_model.module.enc_dec_model.decoder
+        else:
+            encoder = self.frozen_model.enc_dec_model.enc_dec_model.encoder
+            decoder = self.frozen_model.enc_dec_model.enc_dec_model.decoder
 
         if encoder:
             encoder_cfg = self._get_component_cfg('encoder', frozen_model_cfg, cfg)

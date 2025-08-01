@@ -1,4 +1,4 @@
-# Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,17 +18,38 @@ from nemo.utils.import_utils import safe_import
 safe_import("transformer_engine")
 
 from nemo.collections.llm import peft
-from nemo.collections.llm.gpt.data import (
+from nemo.collections.llm.bert.data import BERTMockDataModule, BERTPreTrainingDataModule, SpecterDataModule
+from nemo.collections.llm.bert.model import (
+    BertConfig,
+    BertEmbeddingLargeConfig,
+    BertEmbeddingMiniConfig,
+    BertEmbeddingModel,
+    BertModel,
+    HuggingFaceBertBaseConfig,
+    HuggingFaceBertConfig,
+    HuggingFaceBertLargeConfig,
+    HuggingFaceBertModel,
+    MegatronBertBaseConfig,
+    MegatronBertConfig,
+    MegatronBertLargeConfig,
+)
+from nemo.collections.llm.gpt.data import (  # noqa: F401
     AlpacaDataModule,
+    ChatDataModule,
+    CustomReRankerDataModule,
+    CustomRetrievalDataModule,
     DollyDataModule,
     FineTuningDataModule,
-    HfDatasetDataModule,
+    HFDatasetDataModule,
+    HFDatasetDataModulePacked,
+    HFMockDataModule,
     MockDataModule,
     PreTrainingDataModule,
+    SpecterReRankerDataModule,
     SquadDataModule,
 )
 from nemo.collections.llm.gpt.data.api import dolly, hf_dataset, mock, squad
-from nemo.collections.llm.gpt.model import (
+from nemo.collections.llm.gpt.model import (  # noqa: F401
     Baichuan2Config,
     Baichuan2Config7B,
     Baichuan2Model,
@@ -47,11 +68,20 @@ from nemo.collections.llm.gpt.model import (
     CodeLlamaConfig13B,
     CodeLlamaConfig34B,
     CodeLlamaConfig70B,
+    DeepSeekModel,
+    DeepSeekV2Config,
+    DeepSeekV2LiteConfig,
+    DeepSeekV3Config,
     Gemma2Config,
     Gemma2Config2B,
     Gemma2Config9B,
     Gemma2Config27B,
     Gemma2Model,
+    Gemma3Config1B,
+    Gemma3Config4B,
+    Gemma3Config12B,
+    Gemma3Config27B,
+    Gemma3Model,
     GemmaConfig,
     GemmaConfig2B,
     GemmaConfig7B,
@@ -64,17 +94,45 @@ from nemo.collections.llm.gpt.model import (
     GPTConfig126M,
     GPTConfig175B,
     GPTModel,
-    HfAutoModelForCausalLM,
+    HFAutoModelForCausalLM,
+    Hyena1bConfig,
+    Hyena7bARCLongContextConfig,
+    Hyena7bConfig,
+    Hyena40bARCLongContextConfig,
+    Hyena40bConfig,
+    HyenaConfig,
+    HyenaModel,
+    HyenaNV1bConfig,
+    HyenaNV7bConfig,
+    HyenaNV40bConfig,
+    HyenaNVTestConfig,
+    HyenaTestConfig,
     Llama2Config7B,
     Llama2Config13B,
     Llama2Config70B,
     Llama3Config8B,
     Llama3Config70B,
+    Llama4Config,
+    Llama4Experts16Config,
+    Llama4Experts128Config,
     Llama31Config8B,
     Llama31Config70B,
     Llama31Config405B,
+    Llama31Nemotron70BConfig,
+    Llama31NemotronNano8BConfig,
+    Llama31NemotronUltra253BConfig,
+    Llama32Config1B,
+    Llama32Config3B,
+    Llama32EmbeddingConfig1B,
+    Llama32EmbeddingConfig3B,
+    Llama32Reranker1BConfig,
+    Llama32Reranker500MConfig,
+    Llama33NemotronSuper49BConfig,
     LlamaConfig,
+    LlamaEmbeddingModel,
     LlamaModel,
+    LlamaNemotronModel,
+    MambaModel,
     MaskedTokenLossReduction,
     MistralConfig7B,
     MistralModel,
@@ -90,6 +148,10 @@ from nemo.collections.llm.gpt.model import (
     Nemotron4Config15B,
     Nemotron4Config340B,
     NemotronConfig,
+    NemotronHConfig4B,
+    NemotronHConfig8B,
+    NemotronHConfig47B,
+    NemotronHConfig56B,
     NemotronModel,
     NVIDIAMambaConfig8B,
     NVIDIAMambaHybridConfig8B,
@@ -102,6 +164,24 @@ from nemo.collections.llm.gpt.model import (
     Qwen2Config72B,
     Qwen2Config500M,
     Qwen2Model,
+    Qwen3Config,
+    Qwen3Config1P7B,
+    Qwen3Config4B,
+    Qwen3Config8B,
+    Qwen3Config14B,
+    Qwen3Config30B_A3B,
+    Qwen3Config32B,
+    Qwen3Config235B_A22B,
+    Qwen3Config600M,
+    Qwen3Model,
+    Qwen25Config1P5B,
+    Qwen25Config3B,
+    Qwen25Config7B,
+    Qwen25Config14B,
+    Qwen25Config32B,
+    Qwen25Config72B,
+    Qwen25Config500M,
+    ReRankerModel,
     SSMConfig,
     Starcoder2Config,
     Starcoder2Config3B,
@@ -114,17 +194,52 @@ from nemo.collections.llm.gpt.model import (
     gpt_data_step,
     gpt_forward_step,
 )
-from nemo.collections.llm.quantization import Quantizer, get_calib_data_iter
-from nemo.collections.llm.t5.model import T5Config, T5Model, t5_data_step, t5_forward_step
+from nemo.collections.llm.t5.data import FineTuningDataModule as T5FineTuningDataModule
+from nemo.collections.llm.t5.data import MockDataModule as T5MockDataModule
+from nemo.collections.llm.t5.data import PreTrainingDataModule as T5PreTrainingDataModule
+from nemo.collections.llm.t5.data import SquadDataModule as T5SquadDataModule
+from nemo.collections.llm.t5.model import (
+    T5Config,
+    T5Config3B,
+    T5Config11B,
+    T5Config220M,
+    T5Model,
+    t5_data_step,
+    t5_forward_step,
+)
 
 __all__ = [
     "MockDataModule",
+    "T5MockDataModule",
+    "CustomRetrievalDataModule",
+    "CustomReRankerDataModule",
+    "SpecterReRankerDataModule",
     "GPTModel",
     "GPTConfig",
+    "HyenaTestConfig",
+    "Hyena7bConfig",
+    "Hyena40bConfig",
+    "Hyena7bARCLongContextConfig",
+    "Hyena40bARCLongContextConfig",
+    "HyenaNVTestConfig",
+    "HyenaNV40bConfig",
+    "HyenaNV7bConfig",
+    "HyenaConfig",
+    "HyenaModel",
+    "Hyena1bConfig",
+    "HyenaNV1bConfig",
     "gpt_data_step",
     "gpt_forward_step",
     "T5Model",
     "T5Config",
+    "T5Config220M",
+    "T5Config3B",
+    "T5Config11B",
+    "BertConfig",
+    "BertEmbeddingModel",
+    "BertModel",
+    "BertEmbeddingLargeConfig",
+    "BertEmbeddingMiniConfig",
     "t5_data_step",
     "t5_forward_step",
     "MaskedTokenLossReduction",
@@ -146,6 +261,9 @@ __all__ = [
     "Nemotron4Config15B",
     "Nemotron4Config340B",
     "NemotronConfig",
+    "LlamaEmbeddingModel",
+    "Llama32EmbeddingConfig1B",
+    "Llama32EmbeddingConfig3B",
     "Phi3Config",
     "Phi3ConfigMini",
     "Phi3Model",
@@ -157,6 +275,11 @@ __all__ = [
     "BaseMambaConfig2_7B",
     "NVIDIAMambaConfig8B",
     "NVIDIAMambaHybridConfig8B",
+    "NemotronHConfig4B",
+    "NemotronHConfig8B",
+    "NemotronHConfig47B",
+    "NemotronHConfig56B",
+    "MambaModel",
     "LlamaConfig",
     "Llama2Config7B",
     "Llama2Config13B",
@@ -166,11 +289,23 @@ __all__ = [
     "Llama31Config8B",
     "Llama31Config70B",
     "Llama31Config405B",
+    "Llama32Config1B",
+    "Llama32Config3B",
+    "Llama4Experts16Config",
+    "Llama4Experts128Config",
+    "Llama4Config",
+    "Llama31NemotronNano8BConfig",
+    "Llama31Nemotron70BConfig",
+    "Llama33NemotronSuper49BConfig",
+    "Llama31NemotronUltra253BConfig",
+    "Llama32Reranker500MConfig",
+    "Llama32Reranker1BConfig",
     "CodeLlamaConfig7B",
     "CodeLlamaConfig13B",
     "CodeLlamaConfig34B",
     "CodeLlamaConfig70B",
     "LlamaModel",
+    "LlamaNemotronModel",
     "GemmaConfig",
     "GemmaConfig2B",
     "GemmaConfig7B",
@@ -182,6 +317,11 @@ __all__ = [
     "Gemma2Config",
     "Gemma2Config27B",
     "Gemma2Config2B",
+    "Gemma3Model",
+    "Gemma3Config1B",
+    "Gemma3Config4B",
+    "Gemma3Config12B",
+    "Gemma3Config27B",
     "Baichuan2Config",
     "Baichuan2Config7B",
     "Baichuan2Model",
@@ -194,10 +334,46 @@ __all__ = [
     "Qwen2Config",
     "Qwen2Config500M",
     "Qwen2Config1P5B",
+    "Qwen25Config3B",
     "Qwen2Config72B",
+    "Qwen25Config500M",
+    "Qwen25Config1P5B",
+    "Qwen25Config7B",
+    "Qwen25Config14B",
+    "Qwen25Config32B",
+    "Qwen25Config72B",
+    "Qwen3Config",
+    "Qwen3Config600M",
+    "Qwen3Config1P7B",
+    "Qwen3Config4B",
+    "Qwen3Config8B",
+    "Qwen3Config14B",
+    "Qwen3Config32B",
+    "Qwen3Config30B_A3B",
+    "Qwen3Config235B_A22B",
+    "Qwen3Model",
     "PreTrainingDataModule",
     "FineTuningDataModule",
+    "ChatDataModule",
     "SquadDataModule",
+    "T5PreTrainingDataModule",
+    "T5FineTuningDataModule",
+    "T5SquadDataModule",
+    "T5MockDataModule",
+    "DeepSeekModel",
+    "DeepSeekV2Config",
+    "DeepSeekV2LiteConfig",
+    "DeepSeekV3Config",
+    "HuggingFaceBertBaseConfig",
+    "HuggingFaceBertConfig",
+    "HuggingFaceBertLargeConfig",
+    "HuggingFaceBertModel",
+    "MegatronBertBaseConfig",
+    "MegatronBertConfig",
+    "MegatronBertLargeConfig",
+    "BERTMockDataModule",
+    "BERTPreTrainingDataModule",
+    "SpecterDataModule",
     "DollyDataModule",
     "tokenizer",
     "mock",
@@ -205,16 +381,28 @@ __all__ = [
     "dolly",
     "peft",
     "hf_dataset",
-    "HfAutoModelForCausalLM",
+    "HFAutoModelForCausalLM",
+    "HFMockDataModule",
 ]
 
 
 from nemo.utils import logging
 
 try:
-    import nemo_run as run
+    import nemo_run as run  # noqa: F401
 
-    from nemo.collections.llm.api import export_ckpt, finetune, generate, import_ckpt, pretrain, train, validate
+    from nemo.collections.llm.api import (  # noqa: F401
+        distill,
+        export_ckpt,
+        finetune,
+        generate,
+        import_ckpt,
+        pretrain,
+        prune,
+        ptq,
+        train,
+        validate,
+    )
     from nemo.collections.llm.recipes import *  # noqa
 
     __all__.extend(
@@ -226,20 +414,23 @@ try:
             "validate",
             "finetune",
             "generate",
+            "prune",
+            "ptq",
+            "distill",
         ]
     )
 except ImportError as error:
     logging.warning(f"Failed to import nemo.collections.llm.[api,recipes]: {error}")
 
 try:
-    from nemo.collections.llm.api import deploy
+    from nemo.collections.llm.api import deploy  # noqa: F401
 
     __all__.append("deploy")
 except ImportError as error:
     logging.warning(f"The deploy module could not be imported: {error}")
 
 try:
-    from nemo.collections.llm.api import evaluate
+    from nemo.collections.llm.api import evaluate  # noqa: F401
 
     __all__.append("evaluate")
 except ImportError as error:

@@ -1,4 +1,4 @@
-# Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -125,6 +125,8 @@ class PreTrainingDataModule(pl.LightningDataModule, IOMixin):
         self.build_kwargs = build_kwargs
         self.seq_length = seq_length
         self.seq_length_dec = seq_length_dec
+        self.micro_batch_size = micro_batch_size
+        self.global_batch_size = global_batch_size
         self.tokenizer = tokenizer
         self.num_workers = num_workers
         self.pin_memory = pin_memory
