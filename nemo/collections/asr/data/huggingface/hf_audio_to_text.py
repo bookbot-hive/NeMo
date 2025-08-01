@@ -13,6 +13,8 @@
 # limitations under the License.
 
 from typing import Callable, Dict, List, Optional, Tuple, Union
+from datasets import Audio
+
 
 import datasets as hf_datasets
 import torch
@@ -174,7 +176,15 @@ class _HFAudioTextDataset(Dataset):
             logging.info(f"Loading HuggingFace Dataset with cfg: {data_cfg}")
             dataset_list.append(hf_datasets.load_dataset(**data_cfg))
             logging.info(f"Dataset loaded with {len(dataset_list[-1])} samples")
-        self.dataset = concatenate_datasets(dataset_list)
+        datasets = []
+        for ds in dataset_list:
+            audio_col = ds.features["audio"]
+            # Check if already 16kHz, otherwise cast
+            if hasattr(audio_col, "sampling_rate") and audio_col.sampling_rate == 16000:
+                datasets.append(ds)
+            else:
+                datasets.append(ds.cast_column("audio", Audio(sampling_rate=16000)))
+        self.dataset = concatenate_datasets(datasets)
 
         logging.info(f"Total number of samples loaded: {len(self.dataset)}")
 
